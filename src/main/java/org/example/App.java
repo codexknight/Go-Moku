@@ -36,13 +36,12 @@ public class App extends Application {
     @Override
     public void start(Stage stage) {
 
-        board = new GoMokuBoard();
         newGameButton = new Button("New Game");
         resignButton = new Button("Resign");
         message = new Label("Click \"New Game\" to begin.");
         message.setFont(Font.font(null, FontWeight.BOLD,18));
         message.setTextFill(Color.rgb(100, 255, 100));
-
+        board = new GoMokuBoard();//calls doNewGame() therefore message,newGameB,resignB must be initialized before board is created
         board.drawBoard();
         newGameButton.setOnAction(e -> board.doNewGame());
         resignButton.setOnAction(e -> board.doResign());
@@ -80,6 +79,10 @@ public class App extends Application {
     private class GoMokuBoard extends Canvas {
 
         int[][] boardData;
+
+        boolean gameInProgress;
+
+        int currentPlayer;
 
 
 
@@ -125,10 +128,19 @@ public class App extends Application {
         }
 
         public void doNewGame() {
-
+            if (gameInProgress) {
+                message.setText("Finnish the current game first!");
+                return;
+            }
             boardData = new int[13][13];
-            //boardData[1][1] = BLACK;
+            //boardData[1][1] = BLACK;//testing
             //boardData[1][2] = WHITE;
+            currentPlayer = BLACK;
+            message.setText("Black: Make your move.");
+            gameInProgress = true;
+            newGameButton.setDisable(true);
+            resignButton.setDisable(false);
+            drawBoard();
         }
 
         public void doResign() {
