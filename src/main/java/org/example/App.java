@@ -144,6 +144,22 @@ public class App extends Application {
         }
 
         public void doResign() {
+            if (gameInProgress == false) {
+                message.setText("There is no game in progress!");
+                return;
+            }
+            if (currentPlayer == WHITE) {
+                gameOver("WHITE resign. BLACK wins.");
+            } else {
+                gameOver("BLACK resign. WHITE wins.");
+            }
+        }
+
+        private void gameOver(String s) {
+            message.setText(s);
+            newGameButton.setDisable(false);
+            resignButton.setDisable(true);
+            gameInProgress = false;
         }
 
         public void mousePressed(MouseEvent e) {
