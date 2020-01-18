@@ -13,7 +13,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-import java.util.EmptyStackException;
+
 
 /**
  * JavaFX App
@@ -43,6 +43,7 @@ public class App extends Application {
         message.setTextFill(Color.rgb(100, 255, 100));
         board = new GoMokuBoard();//calls doNewGame() therefore message,newGameB,resignB must be initialized before board is created
         board.drawBoard();
+
         newGameButton.setOnAction(e -> board.doNewGame());
         resignButton.setOnAction(e -> board.doResign());
         board.setOnMousePressed(e -> board.mousePressed(e));
@@ -84,11 +85,26 @@ public class App extends Application {
 
         int currentPlayer;
 
+        int win_r1, win_c1, win_r2, win_c2;
 
 
         GoMokuBoard() {
             super(314, 314);
             doNewGame();
+        }
+
+        public void doNewGame() {
+            if (gameInProgress) {
+                message.setText("Finnish the current game first!");
+                return;
+            }
+            boardData = new int[13][13];
+            currentPlayer = BLACK;
+            message.setText("Black: Make your move.");
+            gameInProgress = true;
+            newGameButton.setDisable(true);
+            resignButton.setDisable(false);
+            drawBoard();
         }
 
         public void drawBoard() {
@@ -127,21 +143,7 @@ public class App extends Application {
             }
         }
 
-        public void doNewGame() {
-            if (gameInProgress) {
-                message.setText("Finnish the current game first!");
-                return;
-            }
-            boardData = new int[13][13];
-            //boardData[1][1] = BLACK;//testing
-            //boardData[1][2] = WHITE;
-            currentPlayer = BLACK;
-            message.setText("Black: Make your move.");
-            gameInProgress = true;
-            newGameButton.setDisable(true);
-            resignButton.setDisable(false);
-            drawBoard();
-        }
+
 
         public void doResign() {
             if (gameInProgress == false) {
@@ -163,6 +165,122 @@ public class App extends Application {
         }
 
         public void mousePressed(MouseEvent e) {
+            if (gameInProgress == false) {
+                message.setText("Click \"New Game\" to start a new game.");
+
+            } else {
+                int col = (int) ((e.getX() - 2) / 24);
+                int row = (int) ((e.getY() - 2) / 24);
+                if (col >= 0 && col < 13 && row >= 0 && row < 13) {
+                    doClickSquare(row, col);
+                }
+            }
+        }
+
+        private void doClickSquare(int row, int col) {
+            if (boardData[row][col] != EMPTY) {
+                if (currentPlayer == WHITE) {
+                    message.setText("WHITE: Please click an empty square.");
+
+                } else {
+                    message.setText("BLACK: Please click an empty square.");
+                }
+                return;
+            }
+            boardData[row][col] = currentPlayer;
+            drawBoard();
+
+            if (winner(row, col)) {
+                if (currentPlayer == WHITE) {
+                    gameOver("WHITE wins the game!");
+                } else {
+                    gameOver("BLACK wins the game!");
+                }
+                drawWinLine();
+                return;
+            }
+
+            boolean emptySpace = false;
+            for (int r = 0; r < 13; r++) {
+                for (int c = 0; c < 13; c++) {
+                    if (boardData[r][c] == EMPTY) {
+                        emptySpace = true;
+                        break;
+                    }
+                }
+            }
+            if (emptySpace == false) {
+                gameOver("The game ends in a draw.");
+                return;
+            }
+
+            if (currentPlayer == BLACK) {
+                currentPlayer = WHITE;
+                message.setText("WHITE: Make your move.");
+            } else {
+                currentPlayer = BLACK;
+                message.setText("BLACK: Make your move.");
+            }
+        }
+
+        private boolean winner(int row, int col) {
+            if (count(boardData[row][col], row, col, 1, 0) >= 5) {
+                return true;
+            }
+            if (count(boardData[row][col], row, col, 0, 1) >= 5) {
+                return true;
+            }
+            if (count(boardData[row][col], row, col, 1, -1) >= 5) {
+                return true;
+            }
+            if (count(boardData[row][col], row, col, 1, 1) >= 5) {
+                return true;
+            }
+            return false;
+        }
+
+        private int count(int player, int row, int col, int dirX, int dirY) {
+            int ct = 1;  // Number of pieces in a row belonging to the player.
+
+            int r, c;    // A row and column to be examined
+
+            r = row + dirX;  // Look at square in specified direction.
+            c = col + dirY;
+            while ( r >= 0 && r < 13 && c >= 0 && c < 13 && boardData[r][c] == player ) {
+                // Square is on the board and contains one of the players's pieces.
+                ct++;
+                r += dirX;  // Go on to next square in this direction.
+                c += dirY;
+            }
+
+            win_r1 = r - dirX;  // The next-to-last square looked at.
+            win_c1 = c - dirY;  //    (The LAST one looked at was off the board or
+            //    did not contain one of the player's pieces.
+
+            r = row - dirX;  // Look in the opposite direction.
+            c = col - dirY;
+            while ( r >= 0 && r < 13 && c >= 0 && c < 13 && boardData[r][c] == player ) {
+                // Square is on the board and contains one of the players's pieces.
+                ct++;
+                r -= dirX;   // Go on to next square in this direction.
+                c -= dirY;
+            }
+
+            win_r2 = r + dirX;
+            win_c2 = c + dirY;
+
+            // At this point, (win_r1,win_c1) and (win_r2,win_c2) mark the endpoints
+            // of the line of pieces belonging to the player.
+
+            return ct;
+
+        }
+
+        private void drawWinLine() {
+            GraphicsContext g = getGraphicsContext2D();
+            g.setStroke(Color.RED);
+            g.setLineWidth(4);
+            g.strokeLine(13+24*win_c1,13+24*win_r1,13+24*win_c2,13+24*win_r2);
         }
 
     }
